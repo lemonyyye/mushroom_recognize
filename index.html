@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>儿童毒蘑菇识别</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: "微软雅黑"; }
+        body { background: #f8f8f8; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; display: flex; flex-direction: column; align-items: center;}
+        .btn { width: 80%; height: 50px; line-height: 50px; background: #7CCD7C; color: white; border: none; border-radius: 25px; font-size: 18px; margin: 20px 0; cursor: pointer; }
+        .preview-img { width: 80%; height: 300px; object-fit: contain; border-radius: 10px; margin: 20px 0; border: 1px solid #eee; display: none; }
+        .result { width: 80%; margin: 20px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px #eee; display: none; }
+        .title { font-size: 20px; font-weight: bold; margin-bottom: 10px; }
+        .poison { color: #FF6347; }
+        .safe { color: #7CCD7C; }
+        .desc { font-size: 16px; color: #666; margin: 10px 0; }
+        .tip { font-size: 14px; color: #999; }
+        .loading { color: #666; font-size: 16px; display: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍄 儿童毒蘑菇识别小助手</h1>
+        <button class="btn" onclick="chooseImage()">拍照/选择蘑菇照片</button>
+        <div class="loading" id="loading">正在识别中，请稍等...</div>
+        <img id="previewImg" class="preview-img">
+        <button class="btn" onclick="uploadImage()" id="uploadBtn" style="display: none;">识别是不是毒蘑菇</button>
+        <div class="result" id="resultBox">
+            <div class="title" id="resultTitle"></div>
+            <div class="desc" id="resultDesc"></div>
+            <div class="tip">⚠️ 安全提示：不要采摘/食用不明蘑菇哦！</div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        // 接口地址配置：后续换服务器只改这一行！
+        const API_URL = "http://localhost:8001/predict-by-image"; 
+        // 示例：换云服务器后改成 → const API_URL = "https://xxx.cloudfunctions.net/predict-by-image";
+
+        // 选择图片
+        function chooseImage() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.capture = 'camera';
+
+            input.onchange = function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                selectedFile = file;
+                const previewImg = document.getElementById('previewImg');
+                previewImg.src = URL.createObjectURL(file);
+                previewImg.style.display = 'block';
+                document.getElementById('uploadBtn').style.display = 'block';
+            };
+            input.click();
+        }
+
+        // 上传图片识别（兼容本地/跨域）
+        function uploadImage() {
+            if (!selectedFile) {
+                alert('请先选择图片！');
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            const resultBox = document.getElementById('resultBox');
+            loading.style.display = 'block';
+            resultBox.style.display = 'none';
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            // 保留mode: 'cors'，兼容跨域场景；本地调用时浏览器会自动适配
+            fetch(API_URL, {
+                method: 'POST',
+                body: formData
+                //mode: 'cors' // 关键：跨域必须保留，本地调用不影响
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`接口返回错误：${response.status} ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                loading.style.display = 'none';
+                resultBox.style.display = 'block';
+                
+                const resultTitle = document.getElementById('resultTitle');
+                const resultDesc = document.getElementById('resultDesc');
+
+                if (data.data.isPoison) {
+                    resultTitle.className = 'title poison';
+                    resultTitle.innerText = '⚠️ 这是毒蘑菇！';
+                } else {
+                    resultTitle.className = 'title safe';
+                    resultTitle.innerText = '✅ 这不是毒蘑菇～';
+                }
+                resultDesc.innerText = data.data.reason;
+            })
+            .catch(error => {
+                loading.style.display = 'none';
+                // 更友好的错误提示，区分跨域/连接失败
+                let errorMsg = error.message;
+                if (errorMsg.includes('CORS')) {
+                    errorMsg = '跨域错误！请检查后端CORS配置';
+                } else if (errorMsg.includes('Failed to fetch')) {
+                    errorMsg = '接口连接失败！请检查接口地址是否正确';
+                }
+                alert('识别失败：' + errorMsg);
+                console.error('详细错误：', error);
+            });
+        }
+    </script>
+</body>
+</html>
