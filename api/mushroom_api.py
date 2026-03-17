@@ -200,6 +200,8 @@ def predict_features(features: dict):
     return {"code": 200, "message": "预测成功", "data": result}
 
 
+
+
 # ===================== 5. 启动服务 =====================
 if __name__ == "__main__":
     import uvicorn
