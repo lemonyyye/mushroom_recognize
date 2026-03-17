@@ -15,6 +15,5 @@
       "src": "/(.*)",
       "dest": "mushroom-api/mushroom_api.py"
     }
-  ],
-  "rootDirectory": "mushroom-api"
+  ]
 }
