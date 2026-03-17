@@ -1,17 +1,13 @@
 {
   "functions": {
     "api/mushroom_api.py": {
-      "runtime": "@vercel/python@3.10.12" 
+      "runtime": "@vercel/python@3.10.12"
     }
   },
   "routes": [
     {
-      "src": "/predict-by-image",
-      "dest": "/api/mushroom_api.py/predict-by-image"
-    },
-    {
-      "src": "/predict-by-features",
-      "dest": "/api/mushroom_api.py/predict-by-features"
+      "src": "/(.*)",
+      "dest": "api/mushroom_api.py"
     }
   ]
 }
